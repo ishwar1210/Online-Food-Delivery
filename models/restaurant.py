@@ -1,5 +1,3 @@
-from db.database import save_data, load_data  # Add this import at the top
-
 def get_restaurants():
     return [
         {
@@ -257,6 +255,10 @@ def get_restaurants():
     ]
 
 def view_restaurants(user):
+    # Ensure 'cart' key exists for the user
+    if 'cart' not in user:
+        user['cart'] = []
+
     restaurants = get_restaurants()
     for idx, rest in enumerate(restaurants, 1):
         print(f"{idx}. {rest['name']}")
@@ -280,11 +282,6 @@ def view_restaurants(user):
             menu_item = selected['menu'][item_idx]
             user['cart'].append(menu_item)
             print(f"{menu_item['item']} added to cart.")
-            # Save data after adding to cart
-            data = load_data()
-            for u in data['users']:
-                if u['username'] == user['username']:
-                    u['cart'] = user['cart']
-            save_data(data)
+            # No JSON save/load here; cart is in-memory for this session
         except (ValueError, IndexError):
             print("Invalid menu item.")

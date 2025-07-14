@@ -1,31 +1,36 @@
-import json
-from models import user
-from db.database import load_data, save_data
+from db.database import get_connection
 
 def register():
-    data = load_data()
+    conn = get_connection()
+    cursor = conn.cursor()
     username = input("Enter username: ")
     password = input("Enter password: ")
+    phone = input("Enter phone number: ")
 
-    for u in data['users']:
-        if u['username'] == username:
-            print("Username already exists.")
-            return
+    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    if cursor.fetchone():
+        print(" Username already exists.")
+        return
 
-    phone = input("Enter phone number: ")   
-    new_user = user.create_user(username, password, phone)
-    data['users'].append(new_user)
-    save_data(data)
-    print("User registered successfully.")
+    cursor.execute(
+        "INSERT INTO users (username, password, phone) VALUES (%s, %s, %s)",
+        (username, password, phone)
+    )
+    conn.commit()
+    print(" User registered successfully.")
 
 def login():
-    data = load_data()
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
     username = input("Enter username: ")
     password = input("Enter password: ")
 
-    for u in data['users']:
-        if u['username'] == username and u['password'] == password:
-            print("Login successful.")
-            return u
-    print("Invalid Username or Password.")
-    return None
+    cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+    user = cursor.fetchone()
+    if user:
+        print(f" Login successful. Welcome {user['username']}!")
+        return user
+    else:
+        print(" Invalid credentials.")
+        return None
+

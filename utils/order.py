@@ -1,23 +1,36 @@
-from models import order
-from db.database import load_data, save_data
+from db.database import get_connection
+from datetime import datetime
 
 def place_order(user):
-    data = load_data()
-    user_record = next((u for u in data['users'] if u['username'] == user['username']), None)
-    if not user_record:
-        print("User not found in database.")
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cart = user.get('cart', [])
+    if not cart:
+        print("Cart is empty. Cannot place order.")
         return
 
-    new_order = order.create_order(user_record)
-    if new_order:
-        save_data(data)
+    address = input("Enter your delivery address: ")
 
-def view_orders(user):
-    if not user['orders']:
-        print("No orders placed yet.")
-        return
-    for idx, ord in enumerate(user['orders'], 1):
-        print(f"\nOrder {idx}:")
-        for item in ord['items']:
-            print(f"- {item['item']} - ₹{item['price']}")
-        print(f"Total: ₹{ord['total']} | Status: {ord['status']} | Placed on: {ord['timestamp']}")
+    total = sum(item['price'] for item in cart)
+    order_time = datetime.now()
+
+    # Insert into orders table
+    cursor.execute(
+        "INSERT INTO orders (user_id, order_time, total_price, address) VALUES (%s, %s, %s, %s)",
+        (user['id'], order_time, total, address)
+    )
+    order_id = cursor.lastrowid
+
+    # Insert items into order_items
+    for item in cart:
+        cursor.execute(
+            "INSERT INTO order_items (order_id, item_name, price) VALUES (%s, %s, %s)",
+            (order_id, item['item'], item['price'])
+        )
+
+    conn.commit()
+    print(f"Order placed successfully! Order ID: {order_id}")
+
+    # Empty the user's cart
+    user['cart'] = []
