@@ -3,7 +3,6 @@ from utils import cart
 from models import restaurant
 from models import order  # <-- Add this import
 
-
 def main():
     print("Welcome to zomato")  # Removed emojis for compatibility
     while True:
